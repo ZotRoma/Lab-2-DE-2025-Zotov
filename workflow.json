@@ -1,0 +1,678 @@
+{
+  "name": "workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        240
+      ],
+      "id": "2c4f7415-a39d-49a9-934b-4090f515606b",
+      "name": "Telegram Trigger",
+      "webhookId": "dfbcabae-91a1-4734-b71c-609d8a6bd826",
+      "credentials": {
+        "telegramApi": {
+          "id": "CkveLFX2Wgo8WmN0",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/start_translate",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "3bba07c2-1e2f-43f8-807d-2e92e63cb3fa"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Is Command"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "4721407e-cf35-474e-97fa-3e1d1bc2bc6e",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "http",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Is URL"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "617578cc-23cd-4571-bd75-02c6e96d7940",
+                    "leftValue": "={{ $json.message.video.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Is File"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        64,
+        224
+      ],
+      "id": "8a1b8717-980f-447b-8113-208a4495d610",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.video.file_id }}",
+        "download": false
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        400
+      ],
+      "id": "151b80c5-7a54-463b-b91a-44f787ba9683",
+      "name": "Get a file",
+      "webhookId": "57577483-5d35-4390-92ec-38f5d3923dd2",
+      "credentials": {
+        "telegramApi": {
+          "id": "CkveLFX2Wgo8WmN0",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Готов к работе! Загрузите либо файл либо ссылку на файл!",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        64
+      ],
+      "id": "95fe6ea8-794b-4992-b28d-778bdb0b1e1b",
+      "name": "Send a text message",
+      "webhookId": "90ad6ab6-4c83-4bd0-823f-d454170f785f",
+      "credentials": {
+        "telegramApi": {
+          "id": "CkveLFX2Wgo8WmN0",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "=yt-dlp -f \"best[ext=mp4]\" -o \"/files/input_{{ $json.message.from.id }}_{{ $json.message.message_id }}.mp4\" \"{{ $json.message.text }}\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        688,
+        240
+      ],
+      "id": "a6ba0e7d-624d-49b5-876a-40e33641f30c",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.result.file_path }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        480,
+        400
+      ],
+      "id": "25e36def-8567-48c3-a032-ddb742e72be6",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/files/input_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        688,
+        400
+      ],
+      "id": "8c95fef9-4684-4840-a6ae-5115295c17fb",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "command": "=ffmpeg -y -i /files/input_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.mp4 -vn -acodec pcm_s16le -ar 16000 -ac 1 /files/audio_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.wav"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        896,
+        240
+      ],
+      "id": "91175e3d-e1a3-4d1f-b7b6-3eb3c5f7fa70",
+      "name": "Execute Command1"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/files/audio_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.wav",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        240
+      ],
+      "id": "f4d77ed2-c8e4-46f6-abaa-c772a9c22a45",
+      "name": "Read/Write Files from Disk2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://whisper:8000/v1/audio/transcriptions",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "large-v3"
+            },
+            {
+              "name": "response_format",
+              "value": "srt"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1312,
+        240
+      ],
+      "id": "d7e954ca-ec1a-45a0-b25c-9bf4b29a1c43",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/files/subs_en_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.srt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        240
+      ],
+      "id": "edb4e13d-bddd-4d5e-bf28-25c73645a6f4",
+      "name": "Read/Write Files from Disk3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"qwen2.5\",\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0\n  },\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a mechanical translation engine. You translate SRT subtitles from English to Russian verbatim.\\n\\nRULES:\\n1. NEVER talk to the user.\\n2. NEVER explain the text.\\n3. Keep timestamps EXACTLY as they are.\\n4. If the text is weird, repetitive, or describes sounds (like [Music]), TRANSLATE IT LITERALLY.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"1\\n00:00:01,000 --> 00:00:04,000\\nHello world!\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"1\\n00:00:01,000 --> 00:00:04,000\\nПривет, мир!\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"2\\n00:00:05,000 --> 00:00:08,000\\n[Music playing]\\nIs my whole store\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"2\\n00:00:05,000 --> 00:00:08,000\\n[Играет музыка]\\nЭто весь мой магазин\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify($('HTTP Request').item.json.data) }}\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2192,
+        144
+      ],
+      "id": "198946a5-c7ca-4053-b254-b211ed42ae9e",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/files/subs_ru_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.srt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2832,
+        224
+      ],
+      "id": "1fcffa50-c019-46e7-abd7-fd8503180116",
+      "name": "Read/Write Files from Disk4"
+    },
+    {
+      "parameters": {
+        "command": "=ffmpeg -y -i /files/input_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.mp4 -vf \"subtitles=/files/subs_ru_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.srt:force_style='Fontsize=24,PrimaryColour=&H00FFFF&,OutlineColour=&H000000&,BorderStyle=1'\" -c:a copy /files/output_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.mp4"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3040,
+        224
+      ],
+      "id": "674082c1-161c-471c-ac44-d4493bacc743",
+      "name": "Execute Command2"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/files/output_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3248,
+        224
+      ],
+      "id": "1e635890-78bc-474c-804d-2449f68db759",
+      "name": "Read/Write Files from Disk5"
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3456,
+        224
+      ],
+      "id": "7437272a-7899-4ded-b893-c634157e7722",
+      "name": "Send a video",
+      "webhookId": "e9918095-c379-4876-991a-1ec34e1c1f07",
+      "credentials": {
+        "telegramApi": {
+          "id": "CkveLFX2Wgo8WmN0",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import base64\n\n\ntext = _input.item.json.get('data')\n\nif not text:\n    raise Exception(\"Whisper не вернул текст!\")\n\n\nbinary_data = base64.b64encode(text.encode('utf-8')).decode('utf-8')\n\nreturn {\n    \"json\": {\n        \"text_preview\": text[:50]  # Для красоты, чтобы видеть начало текста\n    },\n    \"binary\": {\n        \"data\": {  # Имя \"коробки\" с файлом\n            \"data\": binary_data,\n            \"mimeType\": \"application/x-subrip\",\n            \"fileName\": \"subs_en.srt\"\n        }\n    }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        240
+      ],
+      "id": "068de523-45b3-4468-bab5-4d7d260a2772",
+      "name": "Code in Python (Beta)"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import re\n\n\ntry:\n    qwen_text = _input.item.json['message']['content']\nexcept:\n    qwen_text = \"\"\n\n\ntry:\n    google_text = _input.item.json['stdout'] \nexcept:\n    google_text = \"\"\n\n\nbad_markers = [\n    \"here is\", \"translation\", \"sure,\", \"i can help\",\"you need help\"\n    \"it appears\", \"note:\", \"sorry\", \"cannot\", \"unable\"\n]\n\n\nhas_timestamps = \"-->\" in qwen_text\n\n\nis_qwen_bad = False\n\n\nfirst_line = qwen_text[:100].lower()\nfor marker in bad_markers:\n    if marker in first_line:\n        is_qwen_bad = True\n        break\n\n\nif not has_timestamps:\n    is_qwen_bad = True\n\n\nif is_qwen_bad:\n    print(\"Судья: Qwen накосячил. Берем Google.\")\n    final_result = google_text\nelse:\n    print(\"Судья: Qwen молодец. Берем его.\")\n    final_result = qwen_text\n\n\nimport base64\nbinary_data = base64.b64encode(final_result.encode('utf-8')).decode('utf-8')\n\nreturn {\n    \"json\": {\n        \"source\": \"google\" if is_qwen_bad else \"qwen\",\n        \"final_text\": final_result[:50] # превью\n    },\n    \"binary\": {\n        \"data\": {\n            \"data\": binary_data,\n            \"mimeType\": \"application/x-subrip\",\n            \"fileName\": \"subs_ru.srt\"\n        }\n    }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2608,
+        224
+      ],
+      "id": "341f6047-f399-4147-824e-e79332c2f24d",
+      "name": "Code in Python (Beta)1"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import re\n\n# Получаем грязный текст от Whisper\ntext = _input.item.json.get('data')\n\nif not text:\n    return {\"json\": {\"data\": \"\"}}\n\n# Разбиваем SRT на блоки (блоки разделены пустой строкой)\nblocks = text.strip().split('\\n\\n')\ncleaned_blocks = []\nlast_content = \"\"\n\nfor block in blocks:\n    lines = block.split('\\n')\n    # В SRT блоке минимум 3 части: ID, Таймкод, Текст\n    if len(lines) >= 3:\n        # Собираем текст (он может быть на нескольких строках после таймкода)\n        current_content = \" \".join(lines[2:]).strip().lower() # убираем регистр\n        \n        # Фильтр: Если этот текст совпадает с предыдущим — пропускаем (это глюк)\n        if current_content != last_content:\n            cleaned_blocks.append(block)\n            last_content = current_content\n    else:\n        # Если блок странный, оставляем как есть (или пропускаем)\n        cleaned_blocks.append(block)\n\n#  Собираем обратно в строку\ncleaned_text = \"\\n\\n\".join(cleaned_blocks)\n\n# Возвращаем чистый текст в том же поле 'data'\nreturn {\n    \"json\": {\n        \"data\": cleaned_text\n    }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        240
+      ],
+      "id": "bee04457-348d-4fb3-806c-a121c4ca80a3",
+      "name": "Code in Python (Beta)2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2400,
+        224
+      ],
+      "id": "e78a58cb-9676-42cc-88a4-a01e62acaf77",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "command": "=python3 /scripts/translate.py /files/subs_en_{{ $('Telegram Trigger').item.json.message.from.id }}_{{ $('Telegram Trigger').item.json.message.message_id }}.srt "
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2192,
+        336
+      ],
+      "id": "6cd4038c-7503-41a9-8316-c55ef75e006e",
+      "name": "Execute Command3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Execute Command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Execute Command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in Python (Beta)2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute Command3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk4": {
+      "main": [
+        [
+          {
+            "node": "Execute Command2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command2": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk5": {
+      "main": [
+        [
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in Python (Beta)": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in Python (Beta)1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in Python (Beta)2": {
+      "main": [
+        [
+          {
+            "node": "Code in Python (Beta)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in Python (Beta)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "Vm9yu83Qehf0NEmJ"
+  },
+  "versionId": "bb445feb-705e-4321-b8f2-fbde278d0e2b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1f88fe58c51311b68fb0571b14022caf5fab889b2e2a703e75fd032b217a2856"
+  },
+  "id": "Vm9yu83Qehf0NEmJ",
+  "tags": []
+}

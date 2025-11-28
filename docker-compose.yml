@@ -1,0 +1,83 @@
+version: '3.9'
+
+services:
+  # 1. N8N (Оркестратор)
+  n8n:
+    build: .                 
+    container_name: n8n_lab
+    restart: always
+    user: root
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - GENERIC_TIMEZONE=Europe/Samara
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_PAYLOAD_SIZE_MAX=2000
+      - WEBHOOK_URL=${WEBHOOK_URL} 
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+      - ./temp_files:/files
+      - ./telegram-bot-api-data:/var/lib/telegram-bot-api
+      - ./scripts:/scripts
+    depends_on:
+      - telegram-bot-api
+    command: start
+
+  telegram-bot-api:
+    image: aiogram/telegram-bot-api:latest
+    container_name: telegram_api
+    restart: always
+    environment:
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID}     
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH}   
+      - TELEGRAM_LOCAL=true              # Режим локального сервера
+      - TELEGRAM_WORK_DIR=/var/lib/telegram-bot-api
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./telegram-bot-api-data:/var/lib/telegram-bot-api
+
+  # 2. Whisper (Распознавание речи на GPU)
+  whisper:
+    image: fedirz/faster-whisper-server:latest-cuda
+    container_name: whisper_gpu
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - WHISPER_MODEL=large-v3
+    volumes:
+      - whisper_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # 3. Ollama (Перевод текста на GPU)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_gpu
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  n8n_data:
+  ollama_data:
+  whisper_cache:
